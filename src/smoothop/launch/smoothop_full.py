@@ -6,6 +6,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 from launch.actions import DeclareLaunchArgument
+from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 import os
 import time
@@ -76,17 +77,23 @@ def generate_launch_description():
         Node(
             package='smoothop',
             executable='motionControl',
-            name='Motion_controller_node'
+            name='Motion_controller_node',
+            output='screen',
+            arguments=['--ros-args', '--log-level', 'ERROR']  # Changed from WARN
         ),
         Node(
             package='smoothop',
             executable='odom',
-            name='Odometry_node'
+            name='Odometry_node',
+            output='screen',
+            arguments=['--ros-args', '--log-level', 'ERROR']  # Changed from WARN
         ),
         Node(
             package='smoothop',
             executable='motorControl',
-            name='Motor_controller_node'
+            name='Motor_controller_node',
+            output='screen',
+            arguments=['--ros-args', '--log-level', 'ERROR']  # Changed from WARN
         ),
         # Node(
         #     package='joy',
@@ -98,7 +105,8 @@ def generate_launch_description():
             executable='robot_state_publisher',
             name='robot_state_publisher',
             output='screen',
-            parameters=[{'robot_description': robot_description}]
+            parameters=[{'robot_description': robot_description}],
+            arguments=['--ros-args', '--log-level', 'ERROR']  # Changed from WARN
         ),  
         DeclareLaunchArgument(
             'channel_type',
@@ -140,31 +148,35 @@ def generate_launch_description():
             default_value=max_distance,
             description='Maximum lidar distance in meters'),
 
+        DeclareLaunchArgument(
+            'enable_localization',
+            default_value='false',
+            description='Enable Nav2 localization (AMCL). Set true to start localization'),
+
         OpaqueFunction(function=wait_for_serial_device),
-        TimerAction(
-             period=3.0,
-             actions=[
-                 Node(
-                     package='sllidar_ros2',
-                     executable='sllidar_node',
-                     name='sllidar_node',
-                     parameters=[{'channel_type': channel_type,
-                                  'serial_port': serial_port,
-                                  'serial_baudrate': serial_baudrate,
-                                  'frame_id': frame_id,
-                                  'inverted': inverted,
-                                  'angle_compensate': angle_compensate,
-                                  'max_distance': max_distance}],
-                     output='screen',
-                     respawn=True,
-                     respawn_delay=5.0,
-                     arguments=['--ros-args', '--log-level', 'DEBUG']
-                 )
-             ]
-         ),
-        
+         TimerAction(
+              period=3.0,
+              actions=[
+                  Node(
+                      package='sllidar_ros2',
+                      executable='sllidar_node',
+                      name='sllidar_node',
+                      parameters=[{'channel_type': channel_type,
+                                   'serial_port': serial_port,
+                                   'serial_baudrate': serial_baudrate,
+                                   'frame_id': frame_id,
+                                   'inverted': inverted,
+                                   'angle_compensate': angle_compensate,
+                                   'max_distance': max_distance}],
+                      output='screen',
+                      respawn=False,
+                      arguments=['--ros-args', '--log-level', 'INFO']  # Changed from DEBUG
+                  )
+              ]
+          ),
         TimerAction(
             period=10.0,
+            condition=IfCondition(LaunchConfiguration('enable_localization')),
             actions=[
                 IncludeLaunchDescription(
                     PythonLaunchDescriptionSource(nav2_launch_file),

@@ -40,11 +40,11 @@ def generate_launch_description():
             executable='motorControl',
             name='Motor_controller_node'
         ),
-        Node(
-            package='joy',
-            executable='joy_node',
-            name='joy_node'
-        ),
+        # Node(
+        #     package='joy',
+        #     executable='joy_node',
+        #     name='joy_node'
+        # ),
         Node(
             package='robot_state_publisher',
             executable='robot_state_publisher',
