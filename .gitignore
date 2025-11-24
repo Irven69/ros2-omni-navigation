@@ -3,6 +3,8 @@ build/
 install/
 log/
 
+frames*
+
 # Python cache
 __pycache__/
 *.pyc

@@ -30,7 +30,7 @@ def generate_launch_description():
     frame_id = LaunchConfiguration('frame_id', default='laser')
     inverted = LaunchConfiguration('inverted', default='false')
     angle_compensate = LaunchConfiguration('angle_compensate', default='true')
-    scan_mode = LaunchConfiguration('scan_mode', default='Sensitivity')
+    scan_mode = LaunchConfiguration('scan_mode', default='Standard')
     max_distance = LaunchConfiguration('max_distance', default='6.0')
 
     nav2_launch_file = os.path.join(get_package_share_directory('nav2_bringup'), 

@@ -6,6 +6,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 from launch.actions import DeclareLaunchArgument
+from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 import os
 import time
@@ -34,6 +35,9 @@ def generate_launch_description():
 
     nav2_launch_file = os.path.join(get_package_share_directory('nav2_bringup'), 
                                     'launch', 'bringup_launch.py')
+    # SLAM launch (used when enable_slam is true)
+    slam_launch_file = os.path.join(get_package_share_directory('slam_toolbox'),
+                                    'launch', 'online_sync_launch.py')
     map_file = os.path.join(get_package_share_directory('smoothop'), 'map', 'BIC2.yaml')
     config_file = os.path.join(get_package_share_directory('smoothop'), 'config', 'nav2_params.yaml')
 
@@ -76,17 +80,23 @@ def generate_launch_description():
         Node(
             package='smoothop',
             executable='motionControl',
-            name='Motion_controller_node'
+            name='Motion_controller_node',
+            output='screen',
+            arguments=['--ros-args', '--log-level', 'ERROR']  # Changed from WARN
         ),
         Node(
             package='smoothop',
             executable='odom',
-            name='Odometry_node'
+            name='Odometry_node',
+            output='screen',
+            arguments=['--ros-args', '--log-level', 'ERROR']  # Changed from WARN
         ),
         Node(
             package='smoothop',
             executable='motorControl',
-            name='Motor_controller_node'
+            name='Motor_controller_node',
+            output='screen',
+            arguments=['--ros-args', '--log-level', 'ERROR']  # Changed from WARN
         ),
         # Node(
         #     package='joy',
@@ -98,7 +108,8 @@ def generate_launch_description():
             executable='robot_state_publisher',
             name='robot_state_publisher',
             output='screen',
-            parameters=[{'robot_description': robot_description}]
+            parameters=[{'robot_description': robot_description}],
+            arguments=['--ros-args', '--log-level', 'ERROR']  # Changed from WARN
         ),  
         DeclareLaunchArgument(
             'channel_type',
@@ -140,31 +151,40 @@ def generate_launch_description():
             default_value=max_distance,
             description='Maximum lidar distance in meters'),
 
+        DeclareLaunchArgument(
+            'enable_localization',
+            default_value='false',
+            description='Enable Nav2 localization (AMCL). Set true to start localization'),
+
+        DeclareLaunchArgument(
+            'enable_slam',
+            default_value='false',
+            description='Enable SLAM (slam_toolbox). Set true to start online SLAM'),
+
         OpaqueFunction(function=wait_for_serial_device),
-        TimerAction(
-             period=3.0,
-             actions=[
-                 Node(
-                     package='sllidar_ros2',
-                     executable='sllidar_node',
-                     name='sllidar_node',
-                     parameters=[{'channel_type': channel_type,
-                                  'serial_port': serial_port,
-                                  'serial_baudrate': serial_baudrate,
-                                  'frame_id': frame_id,
-                                  'inverted': inverted,
-                                  'angle_compensate': angle_compensate,
-                                  'max_distance': max_distance}],
-                     output='screen',
-                     respawn=True,
-                     respawn_delay=5.0,
-                     arguments=['--ros-args', '--log-level', 'DEBUG']
-                 )
-             ]
-         ),
-        
+         TimerAction(
+              period=3.0,
+              actions=[
+                  Node(
+                      package='sllidar_ros2',
+                      executable='sllidar_node',
+                      name='sllidar_node',
+                      parameters=[{'channel_type': channel_type,
+                                   'serial_port': serial_port,
+                                   'serial_baudrate': serial_baudrate,
+                                   'frame_id': frame_id,
+                                   'inverted': inverted,
+                                   'angle_compensate': angle_compensate,
+                                   'max_distance': max_distance}],
+                      output='screen',
+                      respawn=False,
+                      arguments=['--ros-args', '--log-level', 'INFO']  # Changed from DEBUG
+                  )
+              ]
+          ),
         TimerAction(
             period=10.0,
+            condition=IfCondition(LaunchConfiguration('enable_localization')),
             actions=[
                 IncludeLaunchDescription(
                     PythonLaunchDescriptionSource(nav2_launch_file),
@@ -175,7 +195,37 @@ def generate_launch_description():
                     }.items()
                 )
             ]
-        )
+        ),
+        TimerAction(
+            period=10.0,
+            condition=IfCondition(LaunchConfiguration('enable_slam')),
+            actions=[
+                IncludeLaunchDescription(
+                    PythonLaunchDescriptionSource(slam_launch_file),
+                    launch_arguments={
+                        'use_sim_time':'False'
+                    }.items()
+                )
+            ]
+        ),
+
+        # If SLAM is enabled also start nav2 (navigation) after a short delay so SLAM can initialize.
+        TimerAction(
+            period=20.0,  # wait for slam_toolbox to initialize and start publishing /map
+            condition=IfCondition(LaunchConfiguration('enable_slam')),
+            actions=[
+                IncludeLaunchDescription(
+                    PythonLaunchDescriptionSource(nav2_launch_file),
+                    launch_arguments={
+                        # For SLAM-based navigation we still load nav2 params.
+                        # We do not provide a static map when using online SLAM; nav2 will operate using map updates.
+                        'use_sim_time':'False',
+                        'map': '',               # empty -> no static map file
+                        'params_file': config_file
+                    }.items()
+                )
+            ]
+        ),
     ])
 """
 Node(

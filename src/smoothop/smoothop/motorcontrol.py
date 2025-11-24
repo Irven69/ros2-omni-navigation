@@ -97,7 +97,7 @@ class MotorController(Node):
             self.wheelSpeedMSg.fr = speeds[1] #motor 2
             self.wheelSpeedMSg.rl = speeds[2] #motor 3
             self.wheelSpeedMSg.rr = speeds[3] #motor 4
-            print("Message received:", binmsg.hex())
+            # print("Message received:", binmsg.hex())
             self.feedbackPub.publish(self.wheelSpeedMSg)
         except:
             #self.get_logger().warning("decode except")
