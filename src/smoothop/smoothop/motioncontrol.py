@@ -42,8 +42,8 @@ class MotionController(Node):
         # Acceleration limits (Tune these!)
         # Lower = smoother/slower acceleration
         # Higher = snappier response
-        self.MAX_LIN_ACCEL = 1.0  # m/s^2
-        self.MAX_ANG_ACCEL = 3.0  # rad/s^2
+        self.MAX_LIN_ACCEL = 10.0  # m/s^2
+        self.MAX_ANG_ACCEL = 10.0  # rad/s^2
 
         self.last_time = time.time()
         
