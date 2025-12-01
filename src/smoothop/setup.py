@@ -1,4 +1,5 @@
 from setuptools import find_packages, setup
+import os
 from glob import glob
 
 
@@ -12,10 +13,10 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/urdf', glob('urdf/*.urdf')),
-        ('share/' + package_name + '/map', glob('map/*')),
-        ('share/' + package_name + '/config', glob('config/*.yaml')),
-        ('share/' + package_name + '/launch', glob('launch/*.py')),
+        (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*launch.[pxy][yma]*'))),
+        (os.path.join('share', package_name, 'urdf'), glob('urdf/*')),
+        (os.path.join('share', package_name, 'config'), glob('config/*')),
+        (os.path.join('share', package_name, 'map'), glob('map/*')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -26,10 +27,13 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'test = smoothop.test:main',
-            'motorControl = smoothop.motorcontrol:main',
             'motionControl = smoothop.motioncontrol:main',
-            'odom = smoothop.odom:main'
+            'motorControl = smoothop.motorcontrol:main',
+            'odom = smoothop.odom:main',
+            'test = smoothop.test:main',
+            'motor_plotter = smoothop.motor_plotter:main',
+            'pid_tuner = smoothop.pid_tuner:main',
+            'joy_turbo_filter = smoothop.joy_turbo_filter:main',
         ],
     },
 )

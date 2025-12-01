@@ -1,0 +1,56 @@
+# PS4 Controller Configuration for SmoothOp Robot
+
+joy_node:
+  ros__parameters:
+    device_id: 0
+    deadzone: 0.05
+    autorepeat_rate: 20.0
+
+joy_turbo_filter:
+  ros__parameters:
+    enable_button: 10
+    turbo_button: 7
+    dpad_speed: 0.5
+    dpad_speed_turbo: 0.8
+    # D-pad button indices
+    dpad_up_button: 11
+    dpad_down_button: 12
+    dpad_left_button: 13
+    dpad_right_button: 14
+
+teleop_twist_joy_node:
+  ros__parameters:
+    require_enable_button: true
+    
+    # Enable/turbo buttons
+    enable_button: 10
+    enable_turbo_button: 7
+    
+    # Left joystick for linear movement
+    # Axis 0: left=+1, right=-1 → strafe left/right
+    # Axis 1: up=+1, down=-1 → forward/backward
+    axis_linear:
+      x: 1  # forward/backward (left stick up/down)
+      y: 0  # strafe left/right (left stick left/right)
+    
+    scale_linear:
+      x: 0.8  # negative because up=+1, we want forward=positive velocity
+      y: 0.8   # positive because left=+1, we want left strafe=positive velocity
+    
+    scale_linear_turbo:
+      x: -1.2
+      y: 1.2
+    
+    # Right joystick for rotation
+    # Axis 2: left=+1, right=-1 → rotate
+    axis_angular:
+      yaw: 2  # rotation (right stick left/right)
+    
+    scale_angular:
+      yaw: 1.5  # positive because left=+1, we want CCW rotation=positive
+    
+    scale_angular_turbo:
+      yaw: 2.0
+    
+    # Invert axes if needed (false = no invert)
+    inverted_reverse: false
