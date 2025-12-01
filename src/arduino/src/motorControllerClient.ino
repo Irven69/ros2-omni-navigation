@@ -21,8 +21,8 @@ const double radPerPulse = (2 * pi) / pulsesPerRevolution;
 
 // --- MOTOR TUNING CONSTANTS ---
 // Minimum PWM required to get the wheels turning (overcome friction)
-// If your robot hums but doesn't move, increase this slightly (e.g., to 45 or 50)
-const int MIN_PWM = 40; 
+// Test: Set all to 0. Increase FL until it JUST starts to spin. Write that number down. Repeat for others.
+int min_pwm[4] = {30, 30, 30, 30}; // [FL, FR, BL, BR]
 
 const int PWM_Front_Left    = 5;
 const int DIR1_Front_Left   = 52;
@@ -69,7 +69,7 @@ volatile long encoderCounts[4] = {0};
 // PID Constants 
 // Lowered Kp slightly because Feedforward (MIN_PWM) now does the heavy lifting
 double Kp = 25.0;    
-double Ki = 15.0;     
+double Ki = 5.0;     
 double Kd = 5.0;    
 
 // PID Variables
@@ -86,7 +86,7 @@ PID pidControllers[4] = {
 
 // Timing variables
 unsigned long lastTime = 0;
-const int updateInterval = 10; // Increased to 10ms to give encoders time to tick
+const int updateInterval = 5; // Increased to 10ms to give encoders time to tick
 
 // Interrupt Service Routine
 void encoderISR0() { encoderCounts[0] = encoders[0].read(); }
@@ -116,7 +116,7 @@ void setup() {
         pidControllers[i].SetMode(AUTOMATIC);
         pidControllers[i].SetControllerDirection(DIRECT);
         // Important: Set output limits to allow room for feedforward math
-        pidControllers[i].SetOutputLimits(0, 255 - MIN_PWM); 
+        pidControllers[i].SetOutputLimits(0, 255 - min_pwm[i]); 
     }
     
     attachInterrupt(digitalPinToInterrupt(Encoder_Front_Left_A1), encoderISR0, CHANGE);
@@ -132,10 +132,8 @@ void stopMotor(int motor){
 }
 
 void setMotorSpeed(int motor) {        
-    // Deadzone: If target is practically zero, hard stop
     if (abs(Setpoint[motor]) < 0.1) { 
         stopMotor(motor);
-        // Reset PID integral build up so it doesn't jump when we start again
         pidControllers[motor].SetMode(MANUAL);
         Output[motor] = 0;
         pidControllers[motor].SetMode(AUTOMATIC);
@@ -144,11 +142,8 @@ void setMotorSpeed(int motor) {
 
     pidControllers[motor].Compute();
     
-    // FEEDFORWARD: Add the minimum power required to move the wheel
-    // This overcomes the "Stiction" (Static Friction) immediately
-    int pwmValue = abs(Output[motor]) + MIN_PWM; 
+    int pwmValue = abs(Output[motor]) + min_pwm[motor]; 
     
-    // Safety clamp
     pwmValue = constrain(pwmValue, 0, 255);
 
     digitalWrite(DIR1_Pins[motor], motorDirection[motor]);
@@ -233,7 +228,7 @@ void loop() {
             lastEncoderCounts[i] = encoderCounts[i];
             
             // Filter the input slightly to remove noise
-            filteredInput[i] = filteredInput[i] + ((Input[i] - filteredInput[i]) / 5.0); // Reduced filter strength
+            filteredInput[i] = filteredInput[i] + ((Input[i] - filteredInput[i]) / 2.0); // Reduced filter strength
             currentSpeed[i]=filteredInput[i];
 
             // PID uses absolute speed, direction handled by Serial logic
