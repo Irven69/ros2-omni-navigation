@@ -18,7 +18,8 @@ def generate_launch_description():
             package='joy',
             executable='joy_node',
             name='joy_node',
-            parameters=[config_file]
+            parameters=[config_file],
+            arguments=['--ros-args', '--log-level', 'WARN']  # Add this line
         ),
         Node(
             package='smoothop',
